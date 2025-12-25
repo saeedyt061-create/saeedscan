@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saeedscan"
+version = "1.0.0"
+description = "Advanced Ethical Async Port Scanner"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+  {name = "Saeed"}
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+saeedscan = "saeedscan.cli:main"
