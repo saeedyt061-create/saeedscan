@@ -20,25 +20,45 @@ may be illegal in your country.
         sys.exit(1)
 
 
-def scan_ports(target, start_port, end_port, timeout):
-    print(f"\n🔍 Scanning {target}")
-    print(f"Ports: {start_port}-{end_port}")
-    print(f"Start time: {datetime.now()}\n")
+import threading
+from queue import Queue
 
-    for port in range(start_port, end_port + 1):
+open_ports = []
+queue = Queue()
+
+
+def worker(target, timeout):
+    while not queue.empty():
+        port = queue.get()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(timeout)
-                result = s.connect_ex((target, port))
-                if result == 0:
+                if s.connect_ex((target, port)) == 0:
                     print(f"[OPEN] Port {port}")
-        except KeyboardInterrupt:
-            print("\nScan interrupted by user.")
-            sys.exit(0)
+                    open_ports.append(port)
         except Exception:
             pass
+        finally:
+            queue.task_done()
 
 
+def scan_ports(target, start_port, end_port, timeout, threads=100):
+    print(f"\n🔍 Scanning {target}")
+    print(f"Ports: {start_port}-{end_port}")
+    print(f"Threads: {threads}")
+    print(f"Start time: {datetime.now()}\n")
+
+    for port in range(start_port, end_port + 1):
+        queue.put(port)
+
+    thread_list = []
+    for _ in range(threads):
+        t = threading.Thread(target=worker, args=(target, timeout))
+        t.daemon = True
+        t.start()
+        thread_list.append(t)
+
+    queue.join()
 def main():
     parser = argparse.ArgumentParser(
         description="SaeedScan - Ethical Port Scanner"
@@ -72,8 +92,8 @@ def main():
         print("Invalid port range format. Use start-end")
         sys.exit(1)
 
-    scan_ports(args.target, start_port, end_port, args.timeout)
 
+    scan_ports(args.target, start_port, end_port, args.timeout)
 
 if __name__ == "__main__":
     main()
